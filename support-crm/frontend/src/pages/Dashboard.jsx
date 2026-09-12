@@ -23,6 +23,11 @@ export default function Dashboard() {
   const [sort, setSort] = useState('newest');
   const toast = useToast();
 
+  const [selectedTicketId, setSelectedTicketId] = useState(null);
+  const [similarTickets, setSimilarTickets] = useState([]);
+  const [similarLoading, setSimilarLoading] = useState(false);
+  const [similarError, setSimilarError] = useState(null);
+
   const loadTickets = async () => {
     setLoading(true);
     setError(null);
@@ -50,6 +55,24 @@ export default function Dashboard() {
     setStatus('All');
     setPriority('All');
     setSort('newest');
+    setSelectedTicketId(null);
+    setSimilarTickets([]);
+    setSimilarError(null);
+  };
+
+  const loadSimilarTickets = async (ticketId) => {
+    setSelectedTicketId(ticketId);
+    setSimilarLoading(true);
+    setSimilarError(null);
+    setSimilarTickets([]);
+    try {
+      const response = await ticketService.getSimilar(ticketId);
+      setSimilarTickets(response.data);
+    } catch (err) {
+      setSimilarError(err.response?.data?.detail || 'Failed to load similar tickets');
+    } finally {
+      setSimilarLoading(false);
+    }
   };
 
   const stats = useMemo(() => {
@@ -164,6 +187,7 @@ export default function Dashboard() {
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Created</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Updated</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -184,10 +208,51 @@ export default function Dashboard() {
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{formatDate(ticket.created_at)}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">{formatDate(ticket.updated_at)}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm">
+                    <button
+                      onClick={() => loadSimilarTickets(ticket.ticket_id)}
+                      className="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                    >
+                      Find Similar
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {selectedTicketId && (
+        <div className="mt-8 space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900">Similar Previous Tickets</h2>
+          {similarError && (
+            <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">{similarError}</div>
+          )}
+          {similarLoading ? (
+            <LoadingSpinner />
+          ) : similarTickets.length === 0 ? (
+            <EmptyState description="No similar previous tickets found." />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {similarTickets.map((ticket) => (
+                <div key={ticket.ticket_id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <Link to={`/tickets/${ticket.ticket_id}`} className="text-sm font-medium text-blue-600 hover:text-blue-800">
+                      {ticket.ticket_id}
+                    </Link>
+                    <span className="text-xs text-gray-500">{Math.round(ticket.similarity_score * 100)}% match</span>
+                  </div>
+                  <p className="mt-2 text-sm font-medium text-gray-900">{ticket.subject}</p>
+                  <p className="mt-1 text-xs text-gray-500">{ticket.customer_name}</p>
+                  <div className="mt-3 flex items-center gap-2">
+                    <StatusBadge status={ticket.status} />
+                    <PriorityBadge priority={ticket.priority} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

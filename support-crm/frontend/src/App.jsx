@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import CreateTicket from './pages/CreateTicket';
 import TicketDetail from './pages/TicketDetail';
+import Analytics from './pages/Analytics';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import { ToastProvider } from './components/Toast';
@@ -29,6 +30,7 @@ function App() {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/tickets/new" element={<CreateTicket />} />
                 <Route path="/tickets/:ticket_id" element={<TicketDetail />} />
+                <Route path="/analytics" element={<Analytics />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>

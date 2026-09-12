@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from data.database import SessionLocal
 from data import models, schemas
@@ -161,4 +161,62 @@ def delete_ticket(ticket_id: str, db: Session = Depends(get_db)):
     db.commit()
 
     return schemas.TicketDeleteResponse(message="Ticket deleted successfully", ticket_id=ticket.ticket_id)
+
+
+_STOP_WORDS = {
+    "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by",
+    "is", "it", "its", "this", "that", "these", "those", "be", "was", "were", "been", "being",
+    "have", "has", "had", "do", "does", "did", "will", "would", "shall", "should", "can", "could",
+    "not", "no", "nor", "so", "if", "then", "than", "too", "very", "just", "about", "above",
+    "after", "again", "all", "also", "any", "are", "as", "because", "before", "between", "both",
+    "during", "each", "few", "from", "get", "got", "had", "has", "have", "he", "her", "here",
+    "him", "his", "how", "i", "if", "into", "just", "me", "more", "most", "my", "now", "of", "off",
+    "on", "once", "only", "other", "our", "out", "over", "own", "same", "she", "should", "some",
+    "such", "than", "that", "the", "their", "them", "then", "there", "these", "they", "this", "those",
+    "through", "to", "too", "under", "up", "very", "was", "we", "were", "what", "when", "where",
+    "which", "while", "who", "whom", "why", "will", "with", "you", "your",
+}
+
+
+def _tokenize(text: str) -> set:
+    words = text.lower().split()
+    return {w for w in words if w and w not in _STOP_WORDS}
+
+
+def _jaccard_similarity(set1: set, set2: set) -> float:
+    if not set1 or not set2:
+        return 0.0
+    intersection = set1 & set2
+    union = set1 | set2
+    return len(intersection) / len(union)
+
+
+@router.get("/{ticket_id}/similar", response_model=List[schemas.SimilarTicketResponse])
+def get_similar_tickets(ticket_id: str, db: Session = Depends(get_db)):
+    ticket = db.query(models.Ticket).filter(models.Ticket.ticket_id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+
+    source_text = f"{ticket.subject} {ticket.description}"
+    source_tokens = _tokenize(source_text)
+
+    other_tickets = db.query(models.Ticket).filter(models.Ticket.ticket_id != ticket_id).all()
+
+    scored = []
+    for other in other_tickets:
+        other_text = f"{other.subject} {other.description}"
+        other_tokens = _tokenize(other_text)
+        score = _jaccard_similarity(source_tokens, other_tokens)
+        if score > 0:
+            scored.append({
+                "ticket_id": other.ticket_id,
+                "subject": other.subject,
+                "customer_name": other.customer_name,
+                "status": other.status,
+                "priority": other.priority,
+                "similarity_score": round(score, 4),
+            })
+
+    scored.sort(key=lambda x: x["similarity_score"], reverse=True)
+    return scored[:3]
 
