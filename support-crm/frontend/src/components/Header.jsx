@@ -23,13 +23,6 @@ export default function Header({ onToggleSidebar, sidebarOpen }) {
       </div>
 
       <div className="flex items-center gap-4">
-        <Link
-          to="/tickets/new"
-          className="hidden sm:inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          New Ticket
-        </Link>
-        <div className="h-6 w-px bg-gray-200 hidden sm:block" />
         <div className="flex items-center gap-2">
           <div className="hidden sm:block text-right">
             <div className="text-sm font-medium text-gray-900">Admin User</div>
