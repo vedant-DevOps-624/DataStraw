@@ -18,14 +18,18 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./data/datastraw_crm.db"
     groq_api_key: str = ""
     groq_model: str = "groq/compound-mini"
+    cors_origins: str = "*"
+    port: int = 8000
 
 settings = Settings()
 
 app = FastAPI(title=settings.app_name, debug=settings.debug)
 
+cors_origins = [origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()] if settings.cors_origins != "*" else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -72,5 +76,6 @@ app.include_router(analytics.router)
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8000))
+
+    port = int(os.getenv("PORT", settings.port))
     uvicorn.run(app, host="0.0.0.0", port=port)
