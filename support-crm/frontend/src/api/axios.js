@@ -33,4 +33,6 @@ export const ticketService = {
   update: (ticketId, data) => api.put(`/api/tickets/${ticketId}`, data),
   delete: (ticketId) => api.delete(`/api/tickets/${ticketId}`),
   aiAssist: (ticketId) => api.post(`/api/tickets/${ticketId}/ai-assist`),
+  getSimilar: (ticketId) => api.get(`/api/tickets/${ticketId}/similar`),
+  getAnalytics: () => api.get('/api/analytics/summary'),
 };

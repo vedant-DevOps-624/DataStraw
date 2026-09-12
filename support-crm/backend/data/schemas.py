@@ -89,3 +89,24 @@ class AIAssistResponse(BaseModel):
 class TicketDeleteResponse(BaseModel):
     message: str
     ticket_id: str
+
+
+class SimilarTicketResponse(BaseModel):
+    ticket_id: str
+    subject: str
+    customer_name: str
+    status: str
+    priority: str
+    similarity_score: float
+
+
+class AnalyticsSummary(BaseModel):
+    total_tickets: int
+    open_tickets: int
+    in_progress_tickets: int
+    closed_tickets: int
+    high_priority_tickets: int
+    tickets_by_status: dict
+    tickets_by_priority: dict
+    tickets_over_time: list
+    recent_activity: list
